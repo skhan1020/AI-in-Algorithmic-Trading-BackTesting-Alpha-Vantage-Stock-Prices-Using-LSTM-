@@ -294,8 +294,6 @@ if __name__ == '__main__':
     test_start = train_end
     test_end = n
     
-    flag = True
-
     # Performing the Dickey-Fuller Test
 
     result = ts.adfuller(stock_df[SYMBOL])
@@ -303,43 +301,41 @@ if __name__ == '__main__':
     print('\n')
     if result[0] < result[4]['1%'] or result[0] < result[4]['5%'] or result[0] < result[4]['10%']:
         print('#######    Null Hypothesis of Non-Stationarity can be rejected!    #######')
-        flag = False
     else:
-        print('#######    Time Series is Non-Stationary -- Cannot use ARIMA model!         ######')
+        print('#######    Time Series is Non-Stationary!         ######')
    
    
 
-    if not flag:
    
-        #####  Implementing ARIMA Model to fit the test set ##### 
+    #####  Implementing ARIMA Model to fit the test set ##### 
 
-        arm = arima_model(SYMBOL, stock_df, train_end, test_end)
-        arm_predict = arm.evaluate()
+    arm = arima_model(SYMBOL, stock_df, train_end, test_end)
+    arm_predict = arm.evaluate()
+
+    # Plot the ARIMA predicted and test data 
+
+    plt.figure(figsize=(8,6))
+    plt.plot(stock_df[test_start:test_end], label = 'test data')
+    plt.plot(arm_predict,color='r', label = 'predicted data using ARIMA')
+    plt.legend()
+    plt.ylabel('Price in $')
+    plt.show()
     
-        # Plot the ARIMA predicted and test data 
+    #####   Implementing the LSTM Model to Predict Future Prices   #####
 
-        plt.figure(figsize=(8,6))
-        plt.plot(stock_df[test_start:test_end], label = 'test data')
-        plt.plot(arm_predict,color='r', label = 'predicted data using ARIMA')
-        plt.legend()
-        plt.ylabel('Price in $')
-        plt.show()
-    else:
-        #####   Implementing the LSTM Model to Predict Future Prices   #####
+    lst = lstm_model(SYMBOL, stock_df, train_start, train_end, test_start, test_end)
+    predictions, dev_set, look_back = lst.evaluate()
 
-        lst = lstm_model(SYMBOL, stock_df, train_start, train_end, test_start, test_end)
-        predictions, dev_set, look_back = lst.evaluate()
+    # Plot of Training, Testing and Predicted Stock Prices
 
-        # Plot of Training, Testing and Predicted Stock Prices
-
-        plt.figure(figsize=(8,6))
-        plt.plot(stock_df[:train_end+look_back+1], color = 'b', label = 'Training Data')
-        plt.plot(stock_df[train_end+look_back+1:], color = 'g', label = 'Test Data')
-        plt.plot(predictions, color = 'orange', label = 'Predicted Data')
-        plt.ylabel('Close price in $')
-        plt.title('Applying LSTM on ' + SYMBOL + ' stock prices obtained from Alpha Vantage API')
-        plt.legend()
-        plt.show()
+    plt.figure(figsize=(8,6))
+    plt.plot(stock_df[:train_end+look_back+1], color = 'b', label = 'Training Data')
+    plt.plot(stock_df[train_end+look_back+1:], color = 'g', label = 'Test Data')
+    plt.plot(predictions, color = 'orange', label = 'Predicted Data')
+    plt.ylabel('Close price in $')
+    plt.title('Applying LSTM on ' + SYMBOL + ' stock prices obtained from Alpha Vantage API')
+    plt.legend()
+    plt.show()
 
 
     #### Net Returns on the Predicted Data Based on Strategy #####
