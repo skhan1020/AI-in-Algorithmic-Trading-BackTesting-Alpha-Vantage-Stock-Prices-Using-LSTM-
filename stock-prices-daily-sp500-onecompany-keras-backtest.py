@@ -211,8 +211,9 @@ class lstm_model:
         regressor.add(Dense(units=1))
 
         regressor.compile(loss='mean_squared_error', optimizer='adam')
-        regressor.fit(X_train, y_train, epochs=10, batch_size=32)
-        print(regressor.evaluate(X_test, y_test))
+        history = regressor.fit(X_train, y_train, epochs=10, batch_size=32,
+                validation_data=(X_test, y_test))
+        # print(regressor.evaluate(X_test, y_test))
 
         predicted_price = regressor.predict(X_test)
         predicted_price = scaler.inverse_transform(predicted_price)
@@ -221,7 +222,7 @@ class lstm_model:
         test_df = pd.DataFrame(data = test_price, index = self.data[self.train_len2+look_back+1:].index, columns = [self.symbol])
         predict_df = pd.DataFrame(data = predicted_price, index = self.data[self.train_len2+look_back+1:].index, columns = [self.symbol])
         
-        return predict_df, test_df, look_back
+        return predict_df, test_df, look_back, history.history['loss'], history.history['val_loss']
 
 
 if __name__ == '__main__':
@@ -302,8 +303,7 @@ if __name__ == '__main__':
     if result[0] < result[4]['1%'] or result[0] < result[4]['5%'] or result[0] < result[4]['10%']:
         print('#######    Null Hypothesis of Non-Stationarity can be rejected!    #######')
     else:
-        print('#######    Time Series is Non-Stationary!         ######')
-   
+        print('#######    Null Hypothesis of Non-Stationarity cannot be rejected!    #######')
    
 
    
@@ -324,7 +324,17 @@ if __name__ == '__main__':
     #####   Implementing the LSTM Model to Predict Future Prices   #####
 
     lst = lstm_model(SYMBOL, stock_df, train_start, train_end, test_start, test_end)
-    predictions, dev_set, look_back = lst.evaluate()
+    predictions, dev_set, look_back, train_loss, test_loss = lst.evaluate()
+
+    # Plot of Train, Test Set Losses - Check for Overfitting/Underfitting
+
+    plt.figure()
+    plt.plot(train_loss, label='train')
+    plt.plot(test_loss, label='test')
+    plt.legend()
+    plt.title('Train and Test Set Loss vs Epochs')
+    plt.show()
+
 
     # Plot of Training, Testing and Predicted Stock Prices
 
