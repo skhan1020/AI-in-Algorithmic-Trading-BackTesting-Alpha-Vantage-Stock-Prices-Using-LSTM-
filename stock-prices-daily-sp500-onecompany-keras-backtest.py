@@ -309,6 +309,8 @@ if __name__ == '__main__':
    
     #####  Implementing ARIMA Model to fit the test set ##### 
 
+    ### Bug Present : Inaccurate Predictions -- Zero Variance in predicted data! 
+
     arm = arima_model(SYMBOL, stock_df, train_end, test_end)
     arm_predict = arm.evaluate()
 
