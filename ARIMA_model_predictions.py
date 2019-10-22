@@ -54,7 +54,7 @@ test_end = n
 
 
 # Autocorrelation vs Lag  --- ACF tails off -> AR model ; ACF cuts off after
-# lag p -> MA model
+# lag q -> MA model
 
 plot_acf(stock_df, lags=5000)
 plt.xlabel('Lags')
@@ -62,7 +62,7 @@ plt.ylabel('Autocorrelation (ACF) plot for ' + SYMBOL + ' stock prices')
 plt.title(SYMBOL + ' - ACF vs Lags')
 plt.show()
 
-# Partial Autocorrealtion vs Lag -- PACF cuts off after lag q -> AR model; PACF
+# Partial Autocorrealtion vs Lag -- PACF cuts off after lag p -> AR model; PACF
 # tails off -> MA model
 
 plot_pacf(stock_df, lags=50)
@@ -88,8 +88,7 @@ for lag, ax_coords in enumerate(ax_idcs, 1):
 plt.subplots_adjust(hspace=0.5)
 plt.show()
 
-# AutoCorrelation after 1st Order Differencing -- Order p determined from
-# cut-off lag value
+# AutoCorrelation after 1st Order Differencing 
 
 plot_acf(stock_df.diff().dropna(), lags=5000)
 plt.xlabel('Lags')
@@ -121,7 +120,7 @@ arima_predict = pd.DataFrame(predictions, index = stock_df[train_end:test_end].i
 # Plot ARIMA predictions
 
 plt.figure()
-# plt.plot(stock_df[:train_end], color = 'b', label = 'Training Data')
+plt.plot(stock_df[:train_end], color = 'b', label = 'Training Data')
 plt.plot(stock_df[train_end:], color = 'g', label = 'Test Data')
 plt.plot(arima_predict, color='orange', label = 'predicted data using ARIMA')
 plt.legend()
