@@ -88,7 +88,8 @@ for lag, ax_coords in enumerate(ax_idcs, 1):
 plt.subplots_adjust(hspace=0.5)
 plt.show()
 
-# AutoCorrelation after 1st Order Differencing
+# AutoCorrelation after 1st Order Differencing -- Order p determined from
+# cut-off lag value
 
 plot_acf(stock_df.diff().dropna(), lags=5000)
 plt.xlabel('Lags')
@@ -96,7 +97,7 @@ plt.ylabel('ACF after 1st order Differencing')
 plt.title(SYMBOL + ' - ACF (d=1) vs Lags')
 plt.show()
 
-# Forecasting using ARIMA Model -- AutoRegressive Model with 1st Order Differencing 
+# Forecasting using ARIMA Model -- AR(2) with 1st Order Differencing 
 
 train_ar = stock_df[:train_end].values
 test_ar = stock_df[train_end:].values
