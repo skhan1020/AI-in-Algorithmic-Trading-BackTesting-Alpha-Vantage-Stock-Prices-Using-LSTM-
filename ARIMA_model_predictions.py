@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from statsmodels.tsa.arima_model import ARIMA
+from statsmodels.tsa.stattools import adfuller
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from pandas.plotting import lag_plot
 from sklearn.metrics import mean_squared_error
@@ -95,6 +96,17 @@ plt.xlabel('Lags')
 plt.ylabel('ACF after 1st order Differencing')
 plt.title(SYMBOL + ' - ACF (d=1) vs Lags')
 plt.show()
+
+
+# Check Stationarity After Differencing -- Augmented Dickey Fuller Test
+
+result = adfuller(stock_df[SYMBOL].diff().dropna().values, autolag='AIC')
+
+print('ADF Statistic: ', result[0])
+print('p-value: ', result[1])
+print('Critical Values:')
+for key, value in result[4].items():
+    print(key, value)    
 
 # Forecasting using ARIMA Model -- AR(2) with 1st Order Differencing 
 
