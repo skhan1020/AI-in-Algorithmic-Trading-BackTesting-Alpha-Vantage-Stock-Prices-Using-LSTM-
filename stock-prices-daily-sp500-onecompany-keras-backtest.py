@@ -7,8 +7,10 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 from keras.models import Sequential
 from keras.layers import Dense, LSTM
-import statsmodels.tsa.stattools as ts
+from statsmodels.tsa.stattools import adfuller
 from statsmodels.tsa.arima_model import ARIMA
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from pandas.plotting import lag_plot
 from sklearn.metrics import mean_squared_error
 
 class MovingAverage:
@@ -18,9 +20,9 @@ class MovingAverage:
         self.data = data
         self.short_window = short_window
         self.long_window = long_window
-    
+
     def generate_mavg(self):
-        
+
         # Moving Averages
         aapl_moving_avg_short = self.data[self.symbol].rolling(window=self.short_window).mean()
         aapl_moving_avg_long = self.data[self.symbol].rolling(window=self.long_window).mean()
@@ -33,9 +35,9 @@ class MovingAverage:
         plt.title('Short and Long Moving Averages of ' + self.symbol + ' stocks along with daily close prices')
         plt.show()
 
-    
+
 class Volatility:
-    
+
     def __init__(self, symbol, data, min_periods):
         self.symbol = symbol
         self.data = data
@@ -55,7 +57,7 @@ class Volatility:
         return daily_pct_change
 
     def volatility(self):
-    
+
         # Volatility 
         vol = self.daily_pct_change.rolling(self.min_periods).std()*np.sqrt(self.min_periods)
         vol.plot(figsize=(8,6), label=str(self.min_periods) + ' time periods')
@@ -102,7 +104,7 @@ class MarketOnClosePortfolio:
         self.positions = self.generate_positions()
 
     def generate_positions(self):
-        
+
         # BackTesting
         positions = pd.DataFrame(index=self.signals.index,columns=[self.symbol])
         positions[self.symbol] = 0.0
@@ -110,7 +112,7 @@ class MarketOnClosePortfolio:
         return positions
 
     def backtest_portfolio(self):
-    
+
         portfolio = self.positions.multiply(self.data[self.symbol], axis=0)
         pos_diff = self.positions.diff()
         portfolio['holdings'] = (self.positions.multiply(self.data[self.symbol], axis=0)).sum(axis=1)
@@ -120,43 +122,89 @@ class MarketOnClosePortfolio:
 
         return portfolio
 
+class acf_pacf:
+
+    def __init__(self, data, symbol):
+
+        self.data = data
+        self.symbol = symbol
+
+    def plot(self):
+
+        # Autocorrelation vs Lag  --- ACF tails off -> AR model ; ACF cuts off after
+        # lag q -> MA model
+
+        plot_acf(self.data, lags=5000)
+        plt.xlabel('Lags')
+        plt.ylabel('Autocorrelation (ACF) plot for ' + self.symbol + ' stock prices')
+        plt.title(self.symbol + ' - ACF vs Lags')
+        plt.show()
+
+        # Partial Autocorrealtion vs Lag -- PACF cuts off after lag p -> AR model; PACF
+        # tails off -> MA model
+
+        plot_pacf(self.data, lags=50)
+        plt.xlabel('Lags')
+        plt.ylabel('Partial Autocorrelation (PACF) plot for ' + self.symbol + ' stock prices')
+        plt.title(self.symbol + ' - PACF vs Lags')
+        plt.show()
+
+        # Choosing AR/MA models for forecasting -- Autocorrelation plots for different
+        # lags show a linear relationship -- autoregressive models
+
+        fig, axes = plt.subplots(2,2, figsize=(6, 8))
+        plt.title(self.symbol + ' Autocorrelation plot ')
+
+        ax_idcs = [(0,0), (0, 1), (1, 0), (1, 1)]
+
+        for lag, ax_coords in enumerate(ax_idcs, 1):
+            ax_row, ax_col = ax_coords
+            axis = axes[ax_row][ax_col]
+            lag_plot(self.data, lag=lag, ax=axis)
+            axis.set_title('Lag = ' + str(lag))
+
+        plt.subplots_adjust(hspace=0.5)
+        plt.show()
+    
+    def stationarize(self):
+
+        # AutoCorrelation after 1st Order Differencing
+
+        plot_acf(self.data.diff().dropna(), lags=5000)
+        plt.xlabel('Lags')
+        plt.ylabel('ACF after 1st order Differencing')
+        plt.title(self.symbol + ' - ACF (d=1) vs Lags')
+        plt.show()
 
 class arima_model:
-    
-    def __init__(self, symbol, data, train_len, test_len):
-        
-        self.symbol = symbol
+
+    def __init__(self, data, symbol, train_len):
+
         self.data = data
+        self.symbol = symbol
         self.train_len = train_len
-        self.test_len = test_len
 
     def evaluate(self):
 
-        # Setting up Training and Test/Dev Sets
+        # Forecasting using ARIMA Model -- AR(2) with 1st Order Differencing
 
-        val = self.data.values
-
-        data_train, data_test = val[:self.train_len], val[self.train_len:self.test_len]
-        history = [x for x in data_train]
+        train_ar = self.data[:self.train_len].values
+        test_ar = self.data[self.train_len:].values
+        history = [x for x in train_ar]
         predictions = list()
-
-        # Fitting the ARIMA model: parameters (p, d, q) = (2, 1, 0)
-
-        for t in range(len(data_test)):
+        for t in range(len(test_ar)):
             model = ARIMA(history, order=(2,1,0))
             model_fit = model.fit(disp=0)
-            output = model_fit.forecast()
-            predictions.append(output[0])
+            output=model_fit.forecast()
+            yhat=output[0]
+            predictions.append(yhat)
+            obs=test_ar[t]
+            history.append(obs)
 
-        # Error in ARIMA model
-
-        error = mean_squared_error(data_test, predictions)
+        error = mean_squared_error(test_ar, predictions)
         print('Error in ARIMA model', error)
-        
-        arima_predict = pd.DataFrame(predictions, index = self.data[self.train_len:self.test_len].index, columns = [self.symbol])
-        
-        return arima_predict
 
+        return predictions
 
 class lstm_model: 
 
@@ -168,13 +216,13 @@ class lstm_model:
         self.train_len2 = train_len2
         self.test_len1 = test_len1
         self.test_len2 = test_len2
-    
+
     def evaluate(self):
 
         val = self.data.values
 
         # Setting up X_train, y_train, X_test, y_test
-            
+
         data_train = val[np.arange(self.train_len1, self.train_len2)].reshape(-1, 1)
         data_test = val[np.arange(self.test_len1, self.test_len2)].reshape(-1, 1)
 
@@ -221,12 +269,12 @@ class lstm_model:
 
         test_df = pd.DataFrame(data = test_price, index = self.data[self.train_len2+look_back+1:].index, columns = [self.symbol])
         predict_df = pd.DataFrame(data = predicted_price, index = self.data[self.train_len2+look_back+1:].index, columns = [self.symbol])
-        
+
         return predict_df, test_df, look_back, history.history['loss'], history.history['val_loss']
 
 
 if __name__ == '__main__':
-    
+
     # Enter the Company Symbol, Short Window, Long Window and Initial Capital
 
     SYMBOL = input('Enter Company Symbol: ')
@@ -259,7 +307,7 @@ if __name__ == '__main__':
     stock_df.index = pd.to_datetime(stock_df.index)
     stock_df = stock_df.sort_index(ascending=True)
     stock_df.columns = [SYMBOL]
-    
+
     # Shape of DataFrame
 
     n = stock_df.shape[0]
@@ -289,40 +337,85 @@ if __name__ == '__main__':
     ###############     Test for Stationarity    ################
 
     # Setting Training and Testing Data -- 80% of Data (Train)
-    
+
     train_start = 0
     train_end = int(np.floor(0.8*n))
     test_start = train_end
     test_end = n
-    
+
     # Performing the Dickey-Fuller Test
 
-    result = ts.adfuller(stock_df[SYMBOL])
+    result = adfuller(stock_df[SYMBOL])
     print('Results of the Dickey Fuller Test \n', result)
+    print('ADF Statistic: ', result[0])
+    print('p-value: ', result[1])
+    print('Critical Values:')
+    for key, value in result[4].items():
+        print(key, value)
     print('\n')
     if result[0] < result[4]['1%'] or result[0] < result[4]['5%'] or result[0] < result[4]['10%']:
         print('#######    Null Hypothesis of Non-Stationarity can be rejected!    #######')
     else:
         print('#######    Null Hypothesis of Non-Stationarity cannot be rejected!    #######')
-   
+    print('\n')
 
-   
+
     #####  Implementing ARIMA Model to fit the test set ##### 
 
-    ### Bug Present : Inaccurate Predictions -- Zero Variance in predicted data! 
+    autocorrelation =  acf_pacf(stock_df, SYMBOL)
+    
+    # Plot of AutoCorrelation and Partial AutoCorrelation vs Lags -- Choice of
+    # ARMA parameters
 
-    arm = arima_model(SYMBOL, stock_df, train_end, test_end)
-    arm_predict = arm.evaluate()
+    acf_pacf_plots = autocorrelation.plot()
+
+    # Stationarize Time Series by Differencing - Choose 'd' parameter
+
+    arima_diff_order = autocorrelation.stationarize()
+
+    # Check Stationarity After Differencing -- Augmented Dickey Fuller Test
+
+    result = adfuller(stock_df[SYMBOL].diff().dropna().values, autolag='AIC')
+    
+    print('Check for Stationarity after Differencing')
+
+    print('ADF Statistic: ', result[0])
+    print('p-value: ', result[1])
+    print('Critical Values:')
+    for key, value in result[4].items():
+        print(key, value)
+
+    if result[0] < result[4]['1%'] or result[0] < result[4]['5%'] or result[0] < result[4]['10%']:
+        print('#######    Null Hypothesis of Non-Stationarity can be rejected!    #######')
+    else:
+        print('#######    Null Hypothesis of Non-Stationarity cannot be rejected!    #######')
+    
+    arm = arima_model(stock_df, SYMBOL, train_end)
+    predictions = arm.evaluate()
+
+    arima_predict = pd.DataFrame(predictions, index = stock_df[train_end:test_end].index, columns = [SYMBOL])
+
+    # Plot ARIMA predictions
+
+    plt.figure()
+    plt.plot(stock_df[:train_end], color = 'b', label = 'Training Data')
+    plt.plot(stock_df[train_end:], color = 'g', label = 'Test Data')
+    plt.plot(arima_predict, color='orange', label = 'predicted data using ARIMA')
+    plt.legend()
+    plt.ylabel('Price in $')
+    plt.title('ARIMA model predictions for '+SYMBOL)
+    plt.show()
+
 
     # Plot the ARIMA predicted and test data 
 
-    plt.figure(figsize=(8,6))
-    plt.plot(stock_df[test_start:test_end], label = 'test data')
-    plt.plot(arm_predict,color='r', label = 'predicted data using ARIMA')
-    plt.legend()
-    plt.ylabel('Price in $')
-    plt.show()
-    
+    # plt.figure(figsize=(8,6))
+    # plt.plot(stock_df[test_start:test_end], label = 'test data')
+    # plt.plot(arm_predict,color='r', label = 'predicted data using ARIMA')
+    # plt.legend()
+    # plt.ylabel('Price in $')
+    # plt.show()
+
     #####   Implementing the LSTM Model to Predict Future Prices   #####
 
     lst = lstm_model(SYMBOL, stock_df, train_start, train_end, test_start, test_end)
@@ -373,7 +466,7 @@ if __name__ == '__main__':
     ax1.plot(signals.loc[signals.positions == -1.0].index, signals.short_mavg[signals.positions == -1.0], 'v', markersize=10, color = 'r')
     plt.title('Trading strategy on predicted data with green (buy) and red (sell) markers')
     plt.show()
-    
+
     pft = MarketOnClosePortfolio(SYMBOL, predictions, signals, initial_capital)
     portfolio = pft.backtest_portfolio()
 
@@ -388,7 +481,7 @@ if __name__ == '__main__':
     ax1.plot(portfolio.loc[signals.positions == -1.0].index, portfolio.total[signals.positions == -1.0], 'v', markersize=10, color='r')
     plt.title('Plot of equity curve with buy (green) and sell (red) markers')
     plt.show()
-    
+
     print('Net Profit % based on Keras algorithm:', 100*(portfolio['total'][-1]-portfolio['total'][0])/portfolio['total'][0])
 
 
