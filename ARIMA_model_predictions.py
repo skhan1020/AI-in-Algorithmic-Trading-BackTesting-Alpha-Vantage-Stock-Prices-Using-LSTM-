@@ -48,7 +48,7 @@ p = stock_df.shape[1]
 # Setting Training and Testing Data -- 80% of Data (Train)
 
 train_start = 0
-train_end = int(np.floor(0.8*n))
+train_end = int(np.floor(0.2*n))
 test_start = train_end
 test_end = n
 
@@ -108,13 +108,31 @@ print('Critical Values:')
 for key, value in result[4].items():
     print(key, value)    
 
+
+# Check for Correlations after Differencing
+
+fig, axes = plt.subplots(2,2, figsize=(6, 8))
+plt.title(SYMBOL + ' Autocorrelation plot aftr Differencing')
+
+ax_idcs = [(0,0), (0, 1), (1, 0), (1, 1)]
+
+for lag, ax_coords in enumerate(ax_idcs, 1):
+    ax_row, ax_col = ax_coords
+    axis = axes[ax_row][ax_col]
+    lag_plot(stock_df.diff(), lag=lag, ax=axis)
+    axis.set_title('Lag = ' + str(lag))
+
+plt.subplots_adjust(hspace=0.5)
+plt.show()
+
+
 # Forecasting using ARIMA Model -- AR(2) with 1st Order Differencing 
 
 train_ar = stock_df[:train_end].values
 test_ar = stock_df[train_end:].values
 
 history = [x for x in train_ar]
-predictions = list()
+predictions = list(); new_history = list()
 for t in range(len(test_ar)):
     model = ARIMA(history, order=(2,1,0))
     model_fit = model.fit(disp=0)
@@ -127,14 +145,14 @@ for t in range(len(test_ar)):
 error = mean_squared_error(test_ar, predictions)
 print('Error in ARIMA model', error)
 
-arima_predict = pd.DataFrame(predictions, index = stock_df[train_end:test_end].index, columns = [SYMBOL])
+arm_predict = pd.DataFrame(data = predictions, index = stock_df[train_end:test_end].index, columns = [SYMBOL])
 
 # Plot ARIMA predictions
 
 plt.figure()
-plt.plot(stock_df[:train_end], color = 'b', label = 'Training Data')
-plt.plot(stock_df[train_end:], color = 'g', label = 'Test Data')
-plt.plot(arima_predict, color='orange', label = 'predicted data using ARIMA')
+# plt.plot(stock_df[:train_end], color = 'b', label = 'Training Data')
+# plt.plot(stock_df[train_end:], color = 'g', label = 'Test Data')
+plt.plot(arm_predict, color='r', label = 'predicted data using ARIMA')
 plt.legend()
 plt.ylabel('Price in $')
 plt.title('ARIMA model predictions for '+SYMBOL)
