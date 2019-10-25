@@ -202,9 +202,9 @@ class arima_model:
             history.append(obs)
 
         error = mean_squared_error(test_ar, predictions)
-        print('Error in ARIMA model', error)
+        print('Mean Squared Error in ARIMA model', error)
 
-        return predictions
+        return predictions, error
 
 class lstm_model: 
 
@@ -261,7 +261,7 @@ class lstm_model:
         regressor.compile(loss='mean_squared_error', optimizer='adam')
         history = regressor.fit(X_train, y_train, epochs=10, batch_size=32,
                 validation_data=(X_test, y_test))
-        # print(regressor.evaluate(X_test, y_test))
+        
 
         predicted_price = regressor.predict(X_test)
         predicted_price = scaler.inverse_transform(predicted_price)
@@ -270,7 +270,10 @@ class lstm_model:
         test_df = pd.DataFrame(data = test_price, index = self.data[self.train_len2+look_back+1:].index, columns = [self.symbol])
         predict_df = pd.DataFrame(data = predicted_price, index = self.data[self.train_len2+look_back+1:].index, columns = [self.symbol])
 
-        return predict_df, test_df, look_back, history.history['loss'], history.history['val_loss']
+        error = mean_squared_error(test_price, predicted_price)
+        print('Mean Squared Error in LSTM model', error)
+
+        return predict_df, test_df, look_back, history.history['loss'], history.history['val_loss'], error
 
 
 if __name__ == '__main__':
@@ -391,13 +394,13 @@ if __name__ == '__main__':
         print('#######    Null Hypothesis of Non-Stationarity cannot be rejected!    #######')
     
     arm = arima_model(stock_df, SYMBOL, train_end)
-    predictions = arm.evaluate()
+    predictions, mse_arima = arm.evaluate()
 
     arima_predict = pd.DataFrame(predictions, index = stock_df[train_end:test_end].index, columns = [SYMBOL])
 
     # Plot ARIMA predictions
 
-    plt.figure()
+    plt.figure(figsize=(8,6))
     plt.plot(stock_df[:train_end], color = 'b', label = 'Training Data')
     plt.plot(stock_df[train_end:], color = 'g', label = 'Test Data')
     plt.plot(arima_predict, color='orange', label = 'predicted data using ARIMA')
@@ -406,24 +409,14 @@ if __name__ == '__main__':
     plt.title('ARIMA model predictions for '+SYMBOL)
     plt.show()
 
-
-    # Plot the ARIMA predicted and test data 
-
-    # plt.figure(figsize=(8,6))
-    # plt.plot(stock_df[test_start:test_end], label = 'test data')
-    # plt.plot(arm_predict,color='r', label = 'predicted data using ARIMA')
-    # plt.legend()
-    # plt.ylabel('Price in $')
-    # plt.show()
-
     #####   Implementing the LSTM Model to Predict Future Prices   #####
 
     lst = lstm_model(SYMBOL, stock_df, train_start, train_end, test_start, test_end)
-    predictions, dev_set, look_back, train_loss, test_loss = lst.evaluate()
+    lstm_predictions, dev_set, look_back, train_loss, test_loss, mse_lstm = lst.evaluate()
 
     # Plot of Train, Test Set Losses - Check for Overfitting/Underfitting
 
-    plt.figure()
+    plt.figure(figsize=(8,6))
     plt.plot(train_loss, label='train')
     plt.plot(test_loss, label='test')
     plt.legend()
@@ -435,8 +428,8 @@ if __name__ == '__main__':
 
     plt.figure(figsize=(8,6))
     plt.plot(stock_df[:train_end+look_back+1], color = 'b', label = 'Training Data')
-    plt.plot(stock_df[train_end+look_back+1:], color = 'g', label = 'Test Data')
-    plt.plot(predictions, color = 'orange', label = 'Predicted Data')
+    plt.plot(dev_set, color = 'g', label = 'Test Data')
+    plt.plot(lstm_predictions, color = 'orange', label = 'Predicted Data')
     plt.ylabel('Close price in $')
     plt.title('Applying LSTM on ' + SYMBOL + ' stock prices obtained from Alpha Vantage API')
     plt.legend()
@@ -446,7 +439,7 @@ if __name__ == '__main__':
     #### Net Returns on the Predicted Data Based on Strategy #####
 
 
-    mac = MovingAverageCrossStrategy(SYMBOL, predictions, short_window, long_window)
+    mac = MovingAverageCrossStrategy(SYMBOL, lstm_predictions, short_window, long_window)
     signals = mac.generate_signals()
 
     # Plot of Test Prices and Predicted Prices along with Markers for Trading
@@ -455,7 +448,7 @@ if __name__ == '__main__':
     fig = plt.figure(figsize=(8,6))
     ax1 = fig.add_subplot(111, ylabel='Price in $')
     dev_set[SYMBOL].plot(ax=ax1, color = 'k', lw=2, label='actual data')
-    predictions[SYMBOL].plot(ax=ax1, color = 'm', lw=2, label='predicted data')
+    lstm_predictions[SYMBOL].plot(ax=ax1, color = 'm', lw=2, label='predicted data')
     signals[['short_mavg', 'long_mavg']].plot(ax=ax1, lw=2)
     plt.legend()
 
@@ -467,13 +460,13 @@ if __name__ == '__main__':
     plt.title('Trading strategy on predicted data with green (buy) and red (sell) markers')
     plt.show()
 
-    pft = MarketOnClosePortfolio(SYMBOL, predictions, signals, initial_capital)
+    pft = MarketOnClosePortfolio(SYMBOL, lstm_predictions, signals, initial_capital)
     portfolio = pft.backtest_portfolio()
 
 
     fig = plt.figure(figsize=(8,6))
 
-    #Plot equity curve in dollars
+    # Plot equity curve in dollars
 
     ax1 = fig.add_subplot(111, ylabel='Portfolio Value in $')
     portfolio['total'].plot(ax=ax1, lw=2, label = 'Total Cash = Cash + Holdings')
@@ -485,4 +478,32 @@ if __name__ == '__main__':
     print('Net Profit % based on Keras algorithm:', 100*(portfolio['total'][-1]-portfolio['total'][0])/portfolio['total'][0])
 
 
+    ####  Analysis of LSTM and ARIMA models ### 
+
+    # Test and Predicted Stock Prices in last 100 days - ARIMA
+    
+    plt.figure(figsize=(8,6))
+    plt.plot(stock_df[-100:], color = 'g', label = 'Test Data -- Last 100 Days')
+    plt.plot(arima_predict[-100:], color='orange', label = 'predicted data (ARIMA) -- Last 100 Days')
+    plt.plot(lstm_predictions[-100:], color = 'r', label = 'predicted data (LSTM) -- Last 100 Days ')
+    plt.legend()
+    plt.ylabel('Price in $')
+    plt.title('Compare ARIMA and LSTM model predictions in last 100 days')
+    plt.show()
+    
+    
+    # Test and Predicted Stock Prices in last 100 days - LSTM
+
+    # plt.figure(figsize=(8,6))
+    # plt.plot(dev_set[-100:], color = 'g', label = 'Test Data -- Last 100 Days')
+    # plt.plot(lstm_predictions[-100:], color = 'orange', label = 'predicted data (LSTM) -- Last 100 Days ')
+    # plt.ylabel('Price in $')
+    # plt.title('Compare LSTM model predictions in last 100 days')
+    # plt.legend()
+    # plt.show()
+
+    if mse_arima < mse_lstm:
+        print('#########       ARIMA model predictions are better than LSTM           #########')
+    else:
+        print('#########       LSTM model predictions are better than ARIMA           #########')
 
