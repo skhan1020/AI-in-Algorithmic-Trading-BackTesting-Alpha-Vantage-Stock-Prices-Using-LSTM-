@@ -7,8 +7,7 @@ import numpy as np
 
 def get_data():
 
-    # Enter the Company Symbol, Short Window, Long Window and Initial Capital
-
+    # Enter Company Symbol
     
     SYMBOL = 'AAPL'
 
