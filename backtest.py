@@ -13,10 +13,15 @@ from models import lstm_model as lm
 
 if __name__ == '__main__':
 
-    # Enter the Company Symbol, Short Window, Long Window and Initial Capital
+    # Get Stock Price Data and Company Symbol
 
     alpha_API = stock_data
     stock_df, SYMBOL = alpha_API.get_data()
+
+    
+    # Enter Short Window, Long Window and Initial Capital for Trading
+    # Strategies
+
     short_window = 20
     long_window = 100
     initial_capital = 1000
