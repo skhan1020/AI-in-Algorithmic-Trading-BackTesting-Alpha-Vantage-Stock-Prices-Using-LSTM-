@@ -1,6 +1,4 @@
-import urllib.request, urllib.parse, urllib.error
-import config
-import json
+import stock_data
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,35 +15,12 @@ if __name__ == '__main__':
 
     # Enter the Company Symbol, Short Window, Long Window and Initial Capital
 
-    SYMBOL = 'AAPL'
+    alpha_API = stock_data
+    stock_df, SYMBOL = alpha_API.get_data()
     short_window = 20
     long_window = 100
     initial_capital = 1000
 
-    # Enter Alpha Vantage API URL
-
-    url = 'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=' + SYMBOL + '&outputsize=full&apikey='+ config.public_api_key
-
-    # Extract JSON data 
-
-    alpha_vantage_data = urllib.request.urlopen(url).read().decode()
-    js = json.loads(alpha_vantage_data)
-
-
-    close_price = list()
-    dates = list()
-
-    # Extract Close Prices 
-    for item in js["Time Series (Daily)"]:
-        dates.append(item)
-        close_price.append(float(js['Time Series (Daily)'][item]['4. close']))
-
-    # DataFrame of Close Prices
-
-    stock_df = pd.DataFrame(data=close_price, index=dates)
-    stock_df.index = pd.to_datetime(stock_df.index)
-    stock_df = stock_df.sort_index(ascending=True)
-    stock_df.columns = [SYMBOL]
 
     # Shape of DataFrame
 
