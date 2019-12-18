@@ -1,0 +1,46 @@
+<html>
+  <title>About the App</title>
+  <head>
+  <body>
+    {% extends "template.html" %}
+    {% block content %}
+
+    <p> This App is designed to generate stock price predictions using both
+    ARIMA and LSTM models for any company listed under S&P 500. User is asked
+    to enter the company symbol of their choice. Symbols can be obtained from
+    the following link.
+    <a href="https://en.wikipedia.org/wiki/List_of_S%26P_500_companies" ></a>
+    Daily stock prices
+    are imported from the Alpha Vantage API in json format. Having obtained the
+    data, a time series plot (blue) showing the evolution of the company's stock prices is generated.
+    To test the validity of the models, the dataset is split into training (80%-blue) and test
+    (20%-green) sets. Both ARIMA and LSTM predictions (yellow) are superimposed
+    on top of the test set to highlight model inaccuracies.
+    </p>
+  
+    <p>The trading strategy implemented in our app is based on the behavior of short and
+    long term moving avergaes (MA). It is assumed that the momentum usually
+    lies with short term MAs. Hence, whenever the short term MA crosses
+    the long term MA, a trading signal is generated. If the former overtakes
+    the latter the investor is advised to sell his/her shares while buy signals
+    take into effect if the reverse is true.
+    Finally, an equity curve based on the aforementioned trading strategy shows the net
+    profit made by the investor.</p>
+
+    <p> Enter Company Symbol, Short & Long Windows, and Initial Capital </p>
+    <form action = /graphs method="POST">
+      <label for="company">SYMBOL:</label>
+      <input type="text" name="company" id="company" size="15">
+      <label for="short_window">SHORT WINDOW:</label>
+      <input type="text" name="short_window" id="short_window" size="15">
+      <label for="long_window">LONG WINDOW:</label>
+      <input type="text" name="long_window" id="long_window" size="15">
+      <label for="initial_capital">INITIAL CAPITAL:</label>
+      <input type="text" name="initial_capital" id="initial_capital" size="15">
+      <input type="submit" value="Generate Stock Price Predictions"/>
+    </form>
+
+    {% endblock %}
+  </body>
+</html>
+
