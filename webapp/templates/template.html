@@ -1,0 +1,25 @@
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Flask Parent Template</title>
+    <link rel="stylesheet" href="{{ url_for('static',
+    filename='css/template.css') }}">
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <h1 class="logo">Trading App for S&P 500 companies</h1>
+        <strong><nav>
+            <ul class="menu">
+              <li><a href="{{ url_for('main') }}">Home</a></li>
+              <li><a href="{{ url_for('graphs') }}">Results</a></li>
+            </ul>
+          </nav></strong>
+        </div>
+      </header>
+
+      {% block content %}
+      {% endblock %}
+
+    </body>
+  </html>
