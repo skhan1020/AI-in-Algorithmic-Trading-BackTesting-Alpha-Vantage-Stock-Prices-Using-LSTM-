@@ -59,7 +59,6 @@ def arima_plots(data, symbol, train_len, test_len):
 
 
 def lstm_plots(data, symbol, train_start, train_end, test_start, test_end, short_window, long_window, initial_capital):
-# def lstm_plots(data, symbol, train_start, train_end, test_start, test_end):
 
     #####   Implementing the LSTM Model to Predict Future Prices   #####
 
@@ -129,5 +128,4 @@ def lstm_plots(data, symbol, train_start, train_end, test_start, test_end, short
     bytes_image4 = create_io_obj()
 
     return bytes_image1, bytes_image2, bytes_image3, bytes_image4
-    # return bytes_image1, bytes_image2
 
