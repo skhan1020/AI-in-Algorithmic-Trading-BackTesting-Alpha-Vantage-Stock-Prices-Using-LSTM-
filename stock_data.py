@@ -19,7 +19,7 @@ def get_data():
 
     alpha_vantage_data = urllib.request.urlopen(url).read().decode()
     js = json.loads(alpha_vantage_data)
-
+    
 
     close_price = list()
     dates = list()
@@ -37,3 +37,5 @@ def get_data():
     stock_df.columns = [SYMBOL]
 
     return stock_df, SYMBOL
+
+get_data()
