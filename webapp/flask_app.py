@@ -15,7 +15,6 @@ def graphs():
 
 
     args = request.form.to_dict('company')
-    print(args)
 
     alpha_API = stock_data_webapp
     stock_df, SYMBOL = alpha_API.get_data(args['company'])
