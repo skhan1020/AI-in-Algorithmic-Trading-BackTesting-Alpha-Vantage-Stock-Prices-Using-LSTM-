@@ -57,7 +57,7 @@ class Volatility:
 
 class MovingAverageCrossStrategy:
 
-    def __init__(self, symbol, data, short_window=20, long_window=100):
+    def __init__(self, symbol, data, short_window, long_window):
         self.symbol = symbol
         self.data = data
         self.short_window = short_window
@@ -76,8 +76,6 @@ class MovingAverageCrossStrategy:
         signals['signal'][self.short_window:] = np.where(signals['short_mavg'][self.short_window:] > signals['long_mavg'][self.short_window:], 1, 0)
 
         signals['positions'] = signals['signal'].diff()
-
-        # print(signals[:100])
 
 
         return signals
