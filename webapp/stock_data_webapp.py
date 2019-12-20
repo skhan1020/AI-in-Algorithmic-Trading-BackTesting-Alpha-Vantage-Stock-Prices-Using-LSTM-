@@ -1,16 +1,13 @@
 import urllib.request, urllib.parse, urllib.error
-import config
 import json
 import pandas as pd
 import numpy as np
-
+import sys
+sys.path.append('../')
+import config
 
 def get_data(SYMBOL):
-# def get_data():
 
-    # Enter Company Symbol
-    
-    # SYMBOL = 'AAPL'
 
     # Enter Alpha Vantage API URL
 
