@@ -6,10 +6,9 @@
     {% block content %}
 
     <p> This App is designed to generate stock price predictions using both
-    ARIMA and LSTM models for any company listed under S&P 500. User is asked
-    to enter the company symbol of their choice. Symbols can be obtained from
-    the following link.
-    <a href="https://en.wikipedia.org/wiki/List_of_S%26P_500_companies" ></a>
+    ARIMA and LSTM models for any company listed under S&P 500. The user will
+    be asked to enter the company symbol of their choice. 
+    Symbols can be obtained from the following <a href="https://en.wikipedia.org/wiki/List_of_S%26P_500_companies">link.</a>
     Daily stock prices
     are imported from the Alpha Vantage API in json format. Having obtained the
     data, a time series plot (blue) showing the evolution of the company's stock prices is generated.
@@ -26,7 +25,6 @@
     take into effect if the reverse is true.
     Finally, an equity curve based on the aforementioned trading strategy shows the net
     profit made by the investor.</p>
-
     <p> Enter Company Symbol, Short & Long Windows, and Initial Capital </p>
     <form action = /graphs method="POST">
       <label for="company">SYMBOL:</label>
