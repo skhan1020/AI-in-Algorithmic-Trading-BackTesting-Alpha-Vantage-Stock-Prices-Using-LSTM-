@@ -31,7 +31,6 @@ def plot_stock_prices(stock_price_data, company):
     plt.legend()
     plt.ylabel('Price in $')
     plt.title(company + ' stock prices obtained from Alpha Vantage API')
-    # plt.show()
 
     return create_io_obj()
     
@@ -53,7 +52,6 @@ def arima_plots(data, symbol, train_len, test_len):
     plt.legend()
     plt.ylabel('Price in $')
     plt.title('ARIMA model predictions for '+ symbol)
-    # plt.show()
    
     return create_io_obj()
 
