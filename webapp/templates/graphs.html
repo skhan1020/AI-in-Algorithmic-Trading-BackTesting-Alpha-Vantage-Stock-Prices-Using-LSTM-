@@ -6,19 +6,19 @@
     {% block content %}
     
     <h1> Stock Prices from Alpha Vantage API </h1>
-    <p>  Stock prices are imported from the Alpha Vantage API in the form of
-    JSON objects</p>
     <div><img src='{{ graph1 }}'></img></div>
     <h1> ARIMA model predictions </h1>
     <div><img src='{{ graph2 }}'></img></div>
     <h1> LSTM model predictions </h1>
-    <div>Training and Test Set Losses</div>
+    <p>Training and Test Set Losses</p>
     <div><img src='{{ graph3 }}'></img></div>
-    <div>LSTM predictions</div>
+    <p>LSTM predictions</p>
     <div><img src='{{ graph4 }}'></img></div>
-    <div>Generating Trading Signals based on Moving Average Cross Strategy</div>
+    <h1> Trading Strategy </h1>
+    <p>Generating Trading Signals based on Moving Average Cross Strategy on
+    Test Data</p>
     <div><img src='{{ graph5 }}'></img></div>
-    <div>Plot of Equity Curve</div>
+    <p>Plot of Equity Curve</p>
     <div><img src='{{ graph6 }}'></img></div>
 
     {% endblock %}
