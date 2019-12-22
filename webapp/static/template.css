@@ -1,1 +1,14 @@
-body {  color: #ffffff;  font-family: 'Roboto', sans-serif;  text-align: center;  background-color: #101010;}.center-on-page {  position: absolute;  top:50%;  left: 50%;  transform: translate(-50%,-50%);}h1 {  text-align: center;  color:#ffffff;}img {  vertical-align: middle; }p {color: #ffffff; font-size:16 px; text-shadow}
+body {
+  background-color: #101010;
+  color: #ffffff;
+  text-align: center;
+  font-family:'Roboto', sans-serif;
+}.center-on-page { position: absolute;  top:50%;  left: 50%;  transform: translate(-50%,-50%); }
+h1 {
+  color: #ffffff;
+  text-align: center;
+}
+img {
+  vertical-align: middle;
+}
+
