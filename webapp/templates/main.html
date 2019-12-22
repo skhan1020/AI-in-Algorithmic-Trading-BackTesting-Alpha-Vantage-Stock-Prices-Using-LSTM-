@@ -10,8 +10,8 @@
     be asked to enter the company symbol of their choice. 
     Symbols can be obtained from the following <a href="https://en.wikipedia.org/wiki/List_of_S%26P_500_companies">link.</a>
     Daily stock prices
-    are imported from the Alpha Vantage API in json format. Having obtained the
-    data, a time series plot (blue) showing the evolution of the company's stock prices is generated.
+    are imported from the Alpha Vantage API in json format. Once the data is
+    extracted, a time series plot (blue) showing the evolution of the company's stock prices is generated.
     To test the validity of the models, the dataset is split into training (80%-blue) and test
     (20%-green) sets. Both ARIMA and LSTM predictions (yellow) are superimposed
     on top of the test set to highlight model inaccuracies.
@@ -21,7 +21,7 @@
     long term moving avergaes (MA). It is assumed that the momentum usually
     lies with short term MAs. Hence, whenever the short term MA crosses
     the long term MA, a trading signal is generated. If the former overtakes
-    the latter the investor is advised to sell his/her shares while buy signals
+    the latter and keeps increasing, the investor is advised to sell his/her shares while buy signals
     take into effect if the reverse is true.
     Finally, an equity curve based on the aforementioned trading strategy shows the net
     profit made by the investor.</p>
