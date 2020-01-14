@@ -9,7 +9,7 @@ def get_data():
 
     # Enter Company Symbol
     
-    SYMBOL = 'AAPL'
+    SYMBOL = 'AAPL' 
 
     # Enter Alpha Vantage API URL
 
