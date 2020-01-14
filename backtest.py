@@ -26,7 +26,6 @@ if __name__ == '__main__':
     long_window = 100
     initial_capital = 1000
 
-
     # Shape of DataFrame
 
     n = stock_df.shape[0]
