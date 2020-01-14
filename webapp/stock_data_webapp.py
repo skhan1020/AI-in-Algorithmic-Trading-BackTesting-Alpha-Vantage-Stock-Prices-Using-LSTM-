@@ -1,9 +1,8 @@
 import urllib.request, urllib.parse, urllib.error
 import json
 import pandas as pd
-import numpy as np
 import sys
-sys.path.append('../')
+# sys.path.append('../')
 import config
 
 def get_data(SYMBOL):
