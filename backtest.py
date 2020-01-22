@@ -8,8 +8,8 @@ from tradingstrategy import MovingAverageCrossStrategy as cs
 from tradingstrategy import MarketOnClosePortfolio as pf
 from autocorrelation import acf_pacf as cf
 from models import arima_model as am
+from models import automated_arima as new_am
 from models import lstm_model as lm
-
 
 if __name__ == '__main__':
 
@@ -77,7 +77,7 @@ if __name__ == '__main__':
 
     # Stationarize Time Series by Differencing - Choose 'd' parameter
 
-    arima_diff_order = autocorrelation.acf_diff()
+    arima_diff_order = autocorrelation.acf_pacf_diff()
 
     # Check Stationarity After Differencing -- Augmented Dickey Fuller Test
 
@@ -107,6 +107,12 @@ if __name__ == '__main__':
     plt.ylabel('Price in $')
     plt.title('ARIMA model predictions for '+SYMBOL)
     plt.show()
+
+
+    ##### Implementing Auto ARIMA model (pmdarima library) to predict Future Stock Price #####
+
+    auto_arm = new_am(stock_df, SYMBOL, train_end)
+    predictions = auto_arm.evaluate()
 
     #####   Implementing the LSTM Model to Predict Future Prices   #####
 
@@ -182,16 +188,21 @@ if __name__ == '__main__':
     # Test and Predicted Stock Prices in last 100 days - ARIMA
     
     plt.figure(figsize=(8,6))
-    plt.plot(stock_df[-100:], color = 'g', label = 'Test Data -- Last 100 Days')
-    plt.plot(arima_predict.shift(periods=-1, fill_value=0)[-100:], color='orange', label = 'predicted data (ARIMA) -- Last 100 Days')
-    plt.plot(lstm_predictions.shift(periods=-2, fill_value=0)[-100:], color = 'r', label = 'predicted data (LSTM) -- Last 100 Days ')
+    plt.plot(stock_df[-100:-2], color = 'g', label = 'Test Data -- Last 100 Days')
+    plt.plot(arima_predict.shift(periods=-1).dropna()[-100:-1], color='orange', label = 'predicted data (ARIMA) -- Last 100 Days')
     plt.legend()
     plt.ylabel('Price in $')
-    plt.title('Compare ARIMA and LSTM model predictions in last 100 days')
+    plt.title('Compare ARIMA (shifted - 1 day) model predictions with Actual Test Data in last 100 days')
     plt.show()
     
+    plt.figure(figsize=(8,6))
+    plt.plot(stock_df[-100:-2], color = 'g', label = 'Test Data -- Last 100 Days')
+    plt.plot(lstm_predictions.shift(periods=-2).dropna()[-100:], color = 'r', label = 'predicted data (LSTM) -- Last 100 Days ')
+    plt.legend()
+    plt.ylabel('Price in $')
+    plt.title('Compare LSTM (shifted - 2 days) model predictions with Actual Test Data in last 100 days')
+    plt.show()
     
-
     if mse_arima < mse_lstm:
         print('#########       ARIMA model predictions are better than LSTM           #########')
     else:
