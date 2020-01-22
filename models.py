@@ -6,6 +6,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, LSTM
 from statsmodels.tsa.arima_model import ARIMA
 from sklearn.metrics import mean_squared_error
+import pmdarima as pm
 
 class arima_model:
 
@@ -24,18 +25,65 @@ class arima_model:
         history = [x for x in train_ar]
         predictions = list()
         for t in range(len(test_ar)):
-            model = ARIMA(history, order=(2,1,0))
+            model = ARIMA(history, order=(0,1,0))
             model_fit = model.fit(disp=0)
             output=model_fit.forecast()
             yhat=output[0]
             predictions.append(yhat)
             obs=test_ar[t]
             history.append(obs)
+        
+        print(model_fit.summary())
 
         error = mean_squared_error(test_ar, predictions)
         print('Mean Squared Error in ARIMA model', error)
+        
+        forecast = np.array(predictions)
+        actual = np.array(test_ar)
+        MAPE = np.mean(np.abs(forecast-actual)/np.abs(actual))
+
+        print('Mean Absolute Percentage Error in ARIMA model', MAPE)
 
         return predictions, error
+
+class automated_arima:
+
+    def __init__(self, data, symbol, train_len):
+
+        self.data = data
+        self.symbol = symbol
+        self.train_len = train_len
+
+    def evaluate(self):
+        
+        train_ar = self.data[:self.train_len].values
+        test_ar = self.data[self.train_len:].values
+
+        model = pm.auto_arima(train_ar, start_p=1, start_q=1, test='adf', max_p=3,
+                max_q=3, m=1, d=None, seasonal=False, start_P=0, D=0,
+                trace=True, error_action='ignore',
+                suppress_warnings=True,stepwise=True)
+
+        print(model.summary())
+
+        model.plot_diagnostics(figsize=(8,8))
+        plt.show()
+    
+        def forecast_one_step():
+            fc, conf_int = model.predict(n_periods=1, return_conf_int=True)
+            return (fc.tolist()[0], np.asarray(conf_int).tolist()[0]) 
+
+        forecasts, confidence_intervals = [], []
+
+        for new_ob in test_ar:
+            fc, conf = forecast_one_step()
+            forecasts.append(fc)
+            confidence_intervals.append(conf)
+            model.update(new_ob)
+
+        print('Mean Squared Error from Auto ARIMA model', mean_squared_error(test_ar, forecasts))
+
+        return forecasts
 
 class lstm_model: 
 
@@ -104,4 +152,10 @@ class lstm_model:
         error = mean_squared_error(test_price, predicted_price)
         print('Mean Squared Error in LSTM model', error)
 
+        forecast = np.array(predicted_price)
+        actual = np.array(test_price)
+        MAPE = np.mean(np.abs(forecast-actual)/np.abs(actual))
+
+        print('Mean Absolute Percentage Error in LSTM model', MAPE)
+        
         return predict_df, test_df, look_back, history.history['loss'], history.history['val_loss'], error
