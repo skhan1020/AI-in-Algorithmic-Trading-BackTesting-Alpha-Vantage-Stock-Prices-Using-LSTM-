@@ -26,7 +26,7 @@ class acf_pacf:
         # Partial Autocorrealtion vs Lag -- PACF cuts off after lag p -> AR model; PACF
         # tails off -> MA model
 
-        plot_pacf(self.data, lags=50)
+        plot_pacf(self.data, lags=np.floor(len(self.data)*0.008))
         plt.xlabel('Lags')
         plt.ylabel('Partial Autocorrelation (PACF) plot for ' + self.symbol + ' stock prices')
         plt.title(self.symbol + ' - PACF vs Lags')
@@ -49,17 +49,28 @@ class acf_pacf:
         plt.subplots_adjust(hspace=0.5)
         plt.show()
 
-    def acf_diff(self):
+    def acf_pacf_diff(self):
 
         # AutoCorrelation after 1st Order Differencing
 
-        plot_acf(self.data.diff().dropna(), lags=5000)
+        plot_acf(self.data.diff().dropna(), lags=np.floor(len(self.data)*0.8))
         plt.xlabel('Lags')
         plt.ylabel('ACF after 1st order Differencing')
         plt.title(self.symbol + ' - ACF (d=1) vs Lags')
         plt.show()
+        
+
+        # Partial AutoCorrelation after 1st Order Differencing
+
+        plot_pacf(self.data.diff().dropna(), lags=np.floor(len(self.data)*0.008))
+        plt.xlabel('Lags')
+        plt.ylabel('Partial ACF after 1st order Differencing')
+        plt.title(self.symbol + ' - PACF (d=1) vs Lags')
+        plt.show()
 
     def check_stationarity(self):
+
+        # Checking the Stationarity of Time Series -- Augmented Dickey Fuller Test
 
         result = adfuller(self.data[self.symbol], autolag='AIC')
         print('Results of the Dickey Fuller Test \n', result)
