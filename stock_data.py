@@ -1,3 +1,9 @@
+"""
+This module sends HTTP requests to retrieve closing stock price (json file) of an S&P 500
+company from Alpha Vantage API.
+"""
+
+
 import urllib.request, urllib.parse, urllib.error
 import config
 import json
@@ -6,6 +12,10 @@ import numpy as np
 
 
 def get_data():
+    """
+    Function to generate stock prices and company symbol
+
+    """
 
     # Enter Company Symbol
     
@@ -37,5 +47,3 @@ def get_data():
     stock_df.columns = [SYMBOL]
 
     return stock_df, SYMBOL
-
-get_data()
