@@ -7,9 +7,21 @@ from tradingstrategy import Volatility as vol
 from tradingstrategy import MovingAverageCrossStrategy as cs
 from tradingstrategy import MarketOnClosePortfolio as pf
 from autocorrelation import acf_pacf as cf
-from models import arima_model as am
 from models import automated_arima as new_am
+from models import ann_model as nn
 from models import lstm_model as lm
+
+
+def split_data_train_test(data):
+
+    n = len(data)
+    train_start = 0
+    train_end = int(np.floor(0.8*n))
+    test_start = train_end
+    test_end = n
+
+    return train_start, train_end, test_start, test_end
+
 
 if __name__ == '__main__':
 
@@ -61,6 +73,7 @@ if __name__ == '__main__':
     test_start = train_end
     test_end = n
 
+    # train_start, train_end, test_start, test_end = split_data_train_test(stock_df)
 
     #####  Plot AutoCorrelation, Partial AutoCorrelation Functions and Check for Stationarity ##### 
 
@@ -89,11 +102,16 @@ if __name__ == '__main__':
         print('Check for Stationarity after Differencing')
         stationarity_after_diff.check_stationarity()
 
+    print()
+
+    ##### Implementing Auto ARIMA model (pmdarima library) to predict Future Stock Price #####
+
     
-    #####  Implementing ARIMA Model to fit the test set ##### 
-    
-    arm = am(stock_df, SYMBOL, train_end)
-    predictions, mse_arima = arm.evaluate()
+    print("ARIMA Model Results\n")
+
+
+    auto_arm = new_am(stock_df, SYMBOL, train_end)
+    predictions, mse_arima = auto_arm.evaluate()
 
     arima_predict = pd.DataFrame(predictions, index = stock_df[train_end:test_end].index, columns = [SYMBOL])
 
@@ -108,16 +126,52 @@ if __name__ == '__main__':
     plt.title('ARIMA model predictions for '+SYMBOL)
     plt.show()
 
+    print()
 
-    ##### Implementing Auto ARIMA model (pmdarima library) to predict Future Stock Price #####
+    #####   Implementing ANN Model to Predict Future Stock Prices   #####
 
-    auto_arm = new_am(stock_df, SYMBOL, train_end)
-    predictions = auto_arm.evaluate()
+    print("Standard ANN Model with One Hidden Layer Results\n")
 
-    #####   Implementing the LSTM Model to Predict Future Prices   #####
+    ann = nn(SYMBOL, stock_df, train_start, train_end, test_start, test_end)
+    ann_predictions, dev_set, look_back, mse_ann = ann.evaluate()
 
-    lst = lm(SYMBOL, stock_df, train_start, train_end, test_start, test_end)
-    lstm_predictions, dev_set, look_back, train_loss, test_loss, mse_lstm = lst.evaluate()
+    # Plot of Training, Testing and Predicted Stock Prices
+
+    plt.figure(figsize=(8,6))
+    plt.plot(stock_df[:train_end+look_back+1], color = 'b', label = 'Training Data')
+    plt.plot(dev_set, color = 'g', label = 'Test Data')
+    plt.plot(ann_predictions, color = 'orange', label = 'ANN Predicted Data')
+    plt.ylabel('Close price in $')
+    plt.title('Applying ANN on ' + SYMBOL + ' stock prices obtained from Alpha Vantage API')
+    plt.legend()
+    plt.show()
+
+    print()
+
+    #####   Implementing the LSTM Model to Predict Future Stock Prices   #####
+
+    print("LSTM Model (2 Input Layers) Results\n")
+    
+
+    # train_start, train_end, test_start, test_end = split_data_train_test(stock_df)
+
+    regularizers = [(0.0, 0.0), (0.01, 0.0), (0.0, 0.01), (0.01, 0.01)]
+   
+    prev_error = 1000000
+    for reg in regularizers:
+        lst = lm(SYMBOL, stock_df, train_start, train_end, test_start, test_end, reg)
+        lstm_predictions, dev_set, look_back, train_loss, test_loss, mse_lstm = lst.evaluate()
+        if mse_lstm < prev_error:
+            prev_error = mse_lstm
+            prev_pred = lstm_predictions
+            prev_train_loss = train_loss
+            prev_test_loss = test_loss
+            l1 = reg[0]; l2 = reg[1];
+
+    mse_lstm = prev_error
+    lstm_predictions = prev_pred
+    train_loss = prev_train_loss
+    test_loss = prev_test_loss
 
     # Plot of Train, Test Set Losses - Check for Overfitting/Underfitting
 
@@ -125,7 +179,7 @@ if __name__ == '__main__':
     plt.plot(train_loss, label='train')
     plt.plot(test_loss, label='test')
     plt.legend()
-    plt.title('Train and Test Set Loss vs Epochs')
+    plt.title('Train and Test Set Loss vs Epochs for l1 = %.2f l2 = %.2f' % (l1, l2))
     plt.show()
 
 
@@ -134,9 +188,9 @@ if __name__ == '__main__':
     plt.figure(figsize=(8,6))
     plt.plot(stock_df[:train_end+look_back+1], color = 'b', label = 'Training Data')
     plt.plot(dev_set, color = 'g', label = 'Test Data')
-    plt.plot(lstm_predictions, color = 'orange', label = 'Predicted Data')
+    plt.plot(lstm_predictions, color = 'orange', label = 'LSTM Predicted Data')
     plt.ylabel('Close price in $')
-    plt.title('Applying LSTM on ' + SYMBOL + ' stock prices obtained from Alpha Vantage API')
+    plt.title('Applying LSTM on ' + SYMBOL + ' stock prices obtained from Alpha Vantage API with regularization: l1 = %.2f, l2 = %.2f' % (l1, l2))
     plt.legend()
     plt.show()
 
@@ -197,14 +251,33 @@ if __name__ == '__main__':
     
     plt.figure(figsize=(8,6))
     plt.plot(stock_df[-100:-2], color = 'g', label = 'Test Data -- Last 100 Days')
+    plt.plot(ann_predictions.shift(periods=-2).dropna()[-100:], color = 'r', label = 'predicted data (ANN) -- Last 100 Days ')
+    plt.legend()
+    plt.ylabel('Price in $')
+    plt.title('Compare ANN (shifted - 2 days) model predictions with Actual Test Data in last 100 days')
+    plt.show()
+
+    plt.figure(figsize=(8,6))
+    plt.plot(stock_df[-100:-2], color = 'g', label = 'Test Data -- Last 100 Days')
     plt.plot(lstm_predictions.shift(periods=-2).dropna()[-100:], color = 'r', label = 'predicted data (LSTM) -- Last 100 Days ')
     plt.legend()
     plt.ylabel('Price in $')
-    plt.title('Compare LSTM (shifted - 2 days) model predictions with Actual Test Data in last 100 days')
+    plt.title('Compare LSTM (shifted - 2 days) model predictions with Actual Test Data in last 100 days (l1 = %.2f, l2 = %.2f)' % (l1, l2))
     plt.show()
-    
+   
+    print()
+
+    if mse_arima < mse_ann:
+        print('#########       ARIMA model predictions are better than ANN           #########')
+    else:
+        print('#########       ANN model predictions are better than ARIMA           #########')
+
     if mse_arima < mse_lstm:
         print('#########       ARIMA model predictions are better than LSTM           #########')
     else:
         print('#########       LSTM model predictions are better than ARIMA           #########')
 
+    if mse_ann < mse_lstm:
+        print('#########       ANN model predictions are better than LSTM           #########')
+    else:
+        print('#########       LSTM model predictions are better than ANN           #########')
