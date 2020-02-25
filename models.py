@@ -2,8 +2,10 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
+import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, LSTM
+from tensorflow.keras.regularizers import L1L2
 from statsmodels.tsa.arima_model import ARIMA
 from sklearn.metrics import mean_squared_error
 import pmdarima as pm
@@ -80,12 +82,14 @@ class automated_arima:
             forecasts.append(fc)
             confidence_intervals.append(conf)
             model.update(new_ob)
+        
+        error = mean_squared_error(test_ar, forecasts)
 
-        print('Mean Squared Error from Auto ARIMA model', mean_squared_error(test_ar, forecasts))
+        print('Mean Squared Error from Auto ARIMA model', error)
 
-        return forecasts
+        return forecasts, error
 
-class lstm_model: 
+class ann_model:
 
     def __init__(self, symbol, data, train_len1, train_len2, test_len1, test_len2):
 
@@ -96,8 +100,139 @@ class lstm_model:
         self.test_len1 = test_len1
         self.test_len2 = test_len2
 
+
     def evaluate(self):
 
+        val = self.data.values
+
+        # Setting up X_train, y_train, X_test, y_test
+
+        data_train = val[np.arange(self.train_len1, self.train_len2), :]
+        data_test = val[np.arange(self.test_len1, self.test_len2), :]
+
+        # Normalizing the Data
+
+        scaler = MinMaxScaler()
+        data_train_scaled = scaler.fit_transform(data_train)
+        data_test_scaled = scaler.fit_transform(data_test)
+
+        # Create Sliding Window -- " look_back " variable
+
+        def create_dataset(dataset, look_back):
+            dataX, dataY = [], []
+            for i in range(len(dataset) - look_back -1):
+                a = dataset[i: i+ look_back, 0]
+                dataX.append(a)
+                dataY.append(dataset[i+look_back, 0])
+            return np.array(dataX), np.array(dataY)
+
+
+        look_back = 240  # 3 input features
+
+        X_train, y_train = create_dataset(data_train_scaled, look_back)
+        X_test, y_test = create_dataset(data_test_scaled, look_back)
+
+        # Placeholders for the input and output vectors
+
+        X = tf.compat.v1.placeholder(dtype=tf.float32, shape=[None, look_back])
+        Y = tf.compat.v1.placeholder(dtype=tf.float32, shape=[None])
+
+        # Initialization
+
+        sigma = 1
+        weight_initializer = tf.variance_scaling_initializer(mode="fan_avg",distribution="uniform",scale=sigma)
+        bias_initializer = tf.zeros_initializer()
+
+        # Desiging the Aritifical Neural Network (ANN) 
+
+        n_neurons_1 = 512  # First layer has 512 units
+        n_target = 1  # Output
+
+        # First Hidden layer and Bias
+        
+        W_hidden_1 = tf.Variable(weight_initializer([look_back, n_neurons_1]))
+        bias_hidden_1 = tf.Variable(bias_initializer([n_neurons_1]))
+
+        # Output and Bias associated with it
+
+        W_out = tf.Variable(weight_initializer([n_neurons_1, n_target]))
+        bias_out = tf.Variable(bias_initializer([n_target]))
+
+        # Activation function for 1st hidden layer
+
+        hidden_1 = tf.nn.relu(tf.add(tf.matmul(X, W_hidden_1), bias_hidden_1))
+
+        # Computation of the output (Matrix Multiplication)
+
+        out = tf.transpose(tf.add(tf.matmul(hidden_1, W_out), bias_out))
+
+        # Loss Function
+
+        mse = tf.reduce_mean(tf.math.squared_difference(out, Y))
+        
+        # Optimization (Adam)
+
+        opt = tf.compat.v1.train.AdamOptimizer().minimize(mse)
+
+        # Setting up a Session
+
+        net = tf.compat.v1.Session()
+
+        net.run(tf.compat.v1.global_variables_initializer())
+
+        epochs = 50
+        batch_size = 500
+
+
+        for e in range(epochs):
+
+            shuffle_indices = np.random.permutation(np.arange(len(y_train)))
+            X_train = X_train[shuffle_indices]
+            y_train = y_train[shuffle_indices]
+
+
+            for i in range(0, len(y_train) // batch_size):
+                start = i*batch_size
+                batch_x = X_train[start:start + batch_size]
+                batch_y = y_train[start:start + batch_size]
+
+                net.run(opt, feed_dict={X: batch_x, Y: batch_y})
+
+        predicted_price = net.run(out, feed_dict={X: X_test})
+        predicted_price = scaler.inverse_transform(predicted_price.reshape(-1, 1))
+        test_price = scaler.inverse_transform(y_test.reshape(-1, 1))
+
+        test_df = pd.DataFrame(data = test_price, index = self.data[self.train_len2+look_back+1:].index, columns=[self.symbol])
+        predict_df = pd.DataFrame(data = predicted_price, index = self.data[self.train_len2+look_back+1:].index, columns = [self.symbol])
+
+        mse_final = net.run(mse, feed_dict ={X: X_test, Y: y_test})
+
+        error = mean_squared_error(test_price, predicted_price)
+        print("Mean Squared Error in ANN model", error)
+
+        forecast = np.array(predicted_price)
+        actual = np.array(test_price)
+        MAPE = np.mean(np.abs(forecast-actual)/np.abs(actual))
+
+        print('Mean Absolute Percentage Error in ANN model', MAPE)
+
+        return predict_df, test_df, look_back, error
+
+
+class lstm_model: 
+
+    def __init__(self, symbol, data, train_len1, train_len2, test_len1, test_len2, reg):
+
+        self.symbol = symbol
+        self.data = data
+        self.train_len1 = train_len1
+        self.train_len2 = train_len2
+        self.test_len1 = test_len1
+        self.test_len2 = test_len2
+        self.reg = reg
+
+    def evaluate(self):
+        
         val = self.data.values
 
         # Setting up X_train, y_train, X_test, y_test
@@ -120,7 +255,7 @@ class lstm_model:
             return np.array(dataX), np.array(dataY)
 
 
-        look_back = 3
+        look_back = 240
         X_train, y_train = create_dataset(data_train_scaled, look_back)
         X_test, y_test = create_dataset(data_test_scaled, look_back)
 
@@ -132,14 +267,13 @@ class lstm_model:
         # Applying LSTM
 
         regressor = Sequential()
-        regressor.add(LSTM(units = 50, return_sequences = True, input_shape = (X_train.shape[1], 1)))
+        regressor.add(LSTM(units = 50, return_sequences = True, input_shape = (X_train.shape[1], 1), bias_regularizer = L1L2(l1=self.reg[0], l2=self.reg[1])))
         regressor.add(LSTM(units=50))
 
         regressor.add(Dense(units=1))
 
         regressor.compile(loss='mean_squared_error', optimizer='adam')
-        history = regressor.fit(X_train, y_train, epochs=50, batch_size=32,
-                validation_data=(X_test, y_test))
+        history = regressor.fit(X_train, y_train, epochs=50, batch_size=32, validation_data=(X_test, y_test))
         
 
         predicted_price = regressor.predict(X_test)
@@ -159,3 +293,4 @@ class lstm_model:
         print('Mean Absolute Percentage Error in LSTM model', MAPE)
         
         return predict_df, test_df, look_back, history.history['loss'], history.history['val_loss'], error
+
