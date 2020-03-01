@@ -48,7 +48,5 @@ def graphs():
     graph6=graph6_url)
  
 if __name__ == '__main__':
-    app.debug = True
     app.run("0.0.0", port=80, threaded=False)
-    # app.run(threaded=False)
 
