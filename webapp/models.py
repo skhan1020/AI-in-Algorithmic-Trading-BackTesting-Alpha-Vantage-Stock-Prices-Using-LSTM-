@@ -5,7 +5,6 @@ from sklearn.preprocessing import MinMaxScaler
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, LSTM
-from tensorflow.keras.regularizers import L1L2
 from statsmodels.tsa.arima_model import ARIMA
 from sklearn.metrics import mean_squared_error
 import pmdarima as pm
@@ -221,7 +220,7 @@ class ann_model:
 
 class lstm_model: 
 
-    def __init__(self, symbol, data, train_len1, train_len2, test_len1, test_len2, reg):
+    def __init__(self, symbol, data, train_len1, train_len2, test_len1, test_len2):
 
         self.symbol = symbol
         self.data = data
@@ -229,7 +228,6 @@ class lstm_model:
         self.train_len2 = train_len2
         self.test_len1 = test_len1
         self.test_len2 = test_len2
-        self.reg = reg
 
     def evaluate(self):
         
@@ -267,7 +265,7 @@ class lstm_model:
         # Applying LSTM
 
         regressor = Sequential()
-        regressor.add(LSTM(units = 50, return_sequences = True, input_shape = (X_train.shape[1], 1), bias_regularizer = L1L2(l1=self.reg[0], l2=self.reg[1])))
+        regressor.add(LSTM(units = 50, return_sequences = True, input_shape = (X_train.shape[1], 1)))
         regressor.add(LSTM(units=50))
 
         regressor.add(Dense(units=1))
