@@ -6,7 +6,6 @@ import base64
 import sys
 from tradingstrategy_webapp import MovingAverageCrossStrategy as cs
 from tradingstrategy_webapp import MarketOnClosePortfolio as pf
-# sys.path.insert(1, '../')
 from models import arima_model as am
 from models import lstm_model as lm
 
