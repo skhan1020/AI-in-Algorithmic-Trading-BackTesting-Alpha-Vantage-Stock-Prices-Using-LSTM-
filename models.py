@@ -10,7 +10,7 @@ from statsmodels.tsa.arima_model import ARIMA
 from sklearn.metrics import mean_squared_error
 import pmdarima as pm
 
-class arima_model:
+class ArimaModel:
 
     def __init__(self, data, symbol, train_len):
 
