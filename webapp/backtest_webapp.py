@@ -6,8 +6,8 @@ import base64
 import sys
 from tradingstrategy_webapp import MovingAverageCrossStrategy as cs
 from tradingstrategy_webapp import MarketOnClosePortfolio as pf
-from models import arima_model as am
-from models import lstm_model as lm
+from models import ArimaModel as am
+from models import LSTMModel as lm
 
 
 def create_io_obj():
