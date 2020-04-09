@@ -5,7 +5,7 @@ from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from pandas.plotting import lag_plot
 
 
-class acf_pacf:
+class AcfPacf:
 
     def __init__(self, data, symbol):
 

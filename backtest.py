@@ -6,10 +6,10 @@ from tradingstrategy import MovingAverage as mv
 from tradingstrategy import Volatility as vol
 from tradingstrategy import MovingAverageCrossStrategy as cs
 from tradingstrategy import MarketOnClosePortfolio as pf
-from autocorrelation import acf_pacf as cf
-from models import automated_arima as new_am
-from models import ann_model as nn
-from models import lstm_model as lm
+from autocorrelation import AcfPacf as cf
+from models import AutomatedArima as new_am
+from models import ANNModel as nn
+from models import LSTMModel as lm
 
 
 def split_data_train_test(data):
