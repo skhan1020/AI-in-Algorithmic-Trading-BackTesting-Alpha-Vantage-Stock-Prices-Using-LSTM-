@@ -48,7 +48,7 @@ class arima_model:
 
         return predictions, error
 
-class automated_arima:
+class AutomatedArima:
 
     def __init__(self, data, symbol, train_len):
 
@@ -89,7 +89,7 @@ class automated_arima:
 
         return forecasts, error
 
-class ann_model:
+class ANNModel:
 
     def __init__(self, symbol, data, train_len1, train_len2, test_len1, test_len2):
 
@@ -219,7 +219,7 @@ class ann_model:
         return predict_df, test_df, look_back, error
 
 
-class lstm_model: 
+class LSTMModel: 
 
     def __init__(self, symbol, data, train_len1, train_len2, test_len1, test_len2, reg):
 
